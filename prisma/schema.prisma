@@ -1,0 +1,308 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS ---
+
+enum Role {
+  noivo
+  convidado
+  admin
+}
+
+enum VendorCategory {
+  buffet
+  cerimonia
+  decoracao
+  fotografia
+  musica
+  bolo
+  outros
+}
+
+enum VendorStatus {
+  cotando
+  contratado
+  pago
+  cancelado
+}
+
+enum Priority {
+  alta
+  media
+  baixa
+}
+
+enum PaymentMethod {
+  pix
+  cartao
+  dinheiro
+  outro
+}
+
+enum FileType {
+  image
+  pdf
+  doc
+  other
+}
+
+enum EntityType {
+  wedding
+  vendor
+  gift
+  budget_item
+  checklist_item
+  honeymoon
+}
+
+// --- MODELS ---
+
+model User {
+  id            BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  email         String        @unique @db.VarChar(255)
+  passwordHash  String        @map("password_hash") @db.VarChar(255)
+  fullName      String?       @map("full_name") @db.VarChar(150)
+  role          Role          @default(noivo)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relações
+  weddingsCreated Wedding[]      @relation("UserCreatedWeddings")
+  weddingAccess   WeddingUser[]
+  guests          Guest[]
+  mediaUploaded   MediaFile[]
+
+  @@map("users")
+}
+
+model Wedding {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  title        String   @db.VarChar(150)
+  weddingDate  DateTime @map("wedding_date") @db.Date
+  location     String?  @db.VarChar(255)
+  budgetTotal  Decimal  @default(0.00) @map("budget_total") @db.Decimal(12, 2)
+  coupleName1  String?  @map("couple_name_1") @db.VarChar(100)
+  coupleName2  String?  @map("couple_name_2") @db.VarChar(100)
+  createdBy    BigInt   @map("created_by") @db.UnsignedBigInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relações
+  creator           User               @relation("UserCreatedWeddings", fields: [createdBy], references: [id], onDelete: Cascade)
+  users             WeddingUser[]
+  guests            Guest[]
+  vendors           Vendor[]
+  budgetCategories  BudgetCategory[]
+  checklistItems    ChecklistItem[]
+  gifts             Gift[]
+  giftContributions GiftContribution[]
+  honeymoon         Honeymoon?
+  mediaFiles        MediaFile[]
+
+  @@map("weddings")
+}
+
+model WeddingUser {
+  weddingId BigInt  @map("wedding_id") @db.UnsignedBigInt
+  userId    BigInt  @map("user_id") @db.UnsignedBigInt
+  isOwner   Boolean @default(false) @map("is_owner")
+  canEdit   Boolean @default(true) @map("can_edit")
+
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([weddingId, userId])
+  @@map("wedding_users")
+}
+
+model Guest {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId        BigInt    @map("wedding_id") @db.UnsignedBigInt
+  userId           BigInt?   @map("user_id") @db.UnsignedBigInt
+  fullName         String    @map("full_name") @db.VarChar(150)
+  email            String?   @db.VarChar(255)
+  phone            String?   @db.VarChar(30)
+  relation         String?   @db.VarChar(50)
+  groupName        String?   @map("group_name") @db.VarChar(100)
+  plusOne          Boolean   @default(false) @map("plus_one")
+  confirmed        Int?      @db.TinyInt // NULL=pendente, 1=sim, 0=não
+  adults           Int       @default(1)
+  children         Int       @default(0)
+  invitationSentAt DateTime? @map("invitation_sent_at") @db.Timestamp(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  wedding           Wedding            @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reservedGifts     Gift[]
+  giftContributions GiftContribution[]
+
+  @@map("guests")
+}
+
+model Vendor {
+  id           BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId    BigInt         @map("wedding_id") @db.UnsignedBigInt
+  name         String         @db.VarChar(150)
+  category     VendorCategory
+  contactName  String?        @map("contact_name") @db.VarChar(100)
+  phone        String?        @db.VarChar(30)
+  email        String?        @db.VarChar(255)
+  website      String?        @db.VarChar(255)
+  price        Decimal        @default(0.00) @db.Decimal(12, 2)
+  paid         Decimal        @default(0.00) @db.Decimal(12, 2)
+  status       VendorStatus   @default(cotando)
+  notes        String?        @db.Text
+  contractDate DateTime?      @map("contract_date") @db.Date
+  serviceDate  DateTime?      @map("service_date") @db.Date
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  wedding     Wedding      @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  budgetItems BudgetItem[]
+
+  @@map("vendors")
+}
+
+model BudgetCategory {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId BigInt   @map("wedding_id") @db.UnsignedBigInt
+  name      String   @db.VarChar(100)
+  allocated Decimal  @default(0.00) @db.Decimal(12, 2)
+  spent     Decimal  @default(0.00) @db.Decimal(12, 2)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  wedding     Wedding      @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  budgetItems BudgetItem[]
+
+  @@map("budget_categories")
+}
+
+model BudgetItem {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  categoryId BigInt    @map("category_id") @db.UnsignedBigInt
+  name       String    @db.VarChar(150)
+  allocated  Decimal   @default(0.00) @db.Decimal(12, 2)
+  spent      Decimal   @default(0.00) @db.Decimal(12, 2)
+  vendorId   BigInt?   @map("vendor_id") @db.UnsignedBigInt
+  notes      String?   @db.Text
+  dueDate    DateTime? @map("due_date") @db.Date
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  category BudgetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  vendor   Vendor?        @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  @@map("budget_items")
+}
+
+model ChecklistTemplate {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  title       String   @db.VarChar(200)
+  description String?  @db.Text
+  category    String?  @db.VarChar(100)
+  dueOffset   Int      @default(0) @map("due_offset")
+  priority    Priority @default(media)
+
+  checklistItems ChecklistItem[]
+
+  @@map("checklist_templates")
+}
+
+model ChecklistItem {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId   BigInt    @map("wedding_id") @db.UnsignedBigInt
+  templateId  BigInt?   @map("template_id") @db.UnsignedBigInt
+  title       String    @db.VarChar(200)
+  description String?   @db.Text
+  category    String?   @db.VarChar(100)
+  dueDate     DateTime? @map("due_date") @db.Date
+  completedAt DateTime? @map("completed_at") @db.Timestamp(0)
+  priority    Priority  @default(media)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  wedding  Wedding            @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  template ChecklistTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@map("checklist_items")
+}
+
+model Gift {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId   BigInt   @map("wedding_id") @db.UnsignedBigInt
+  name        String   @db.VarChar(200)
+  description String?  @db.Text
+  price       Decimal? @db.Decimal(12, 2)
+  link        String?  @db.VarChar(500)
+  imageUrl    String?  @map("image_url") @db.VarChar(500)
+  reservedBy  BigInt?  @map("reserved_by") @db.UnsignedBigInt
+  purchased   Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  wedding  Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  reserved Guest?   @relation(fields: [reservedBy], references: [id], onDelete: SetNull)
+
+  @@map("gifts")
+}
+
+model GiftContribution {
+  id             BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId      BigInt        @map("wedding_id") @db.UnsignedBigInt
+  guestId        BigInt        @map("guest_id") @db.UnsignedBigInt
+  amount         Decimal       @db.Decimal(12, 2)
+  method         PaymentMethod @default(pix)
+  receiptUrl     String?       @map("receipt_url") @db.VarChar(500)
+  notes          String?       @db.Text
+  contributedAt  DateTime      @default(now()) @map("contributed_at") @db.Timestamp(0)
+
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  guest   Guest   @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  @@map("gift_contributions")
+}
+
+model Honeymoon {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId     BigInt    @unique @map("wedding_id") @db.UnsignedBigInt
+  destination   String?   @db.VarChar(150)
+  departureDate DateTime? @map("departure_date") @db.Date
+  returnDate    DateTime? @map("return_date") @db.Date
+  budget        Decimal   @default(0.00) @db.Decimal(12, 2)
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  @@map("honeymoon")
+}
+
+model MediaFile {
+  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId   BigInt     @map("wedding_id") @db.UnsignedBigInt
+  entityType  EntityType @map("entity_type")
+  entityId    BigInt     @map("entity_id") @db.UnsignedBigInt
+  fileName    String     @map("file_name") @db.VarChar(255)
+  fileType    FileType   @map("file_type")
+  url         String     @db.VarChar(500)
+  description String?    @db.Text
+  uploadedBy  BigInt     @map("uploaded_by") @db.UnsignedBigInt
+  uploadedAt  DateTime   @default(now()) @map("uploaded_at") @db.Timestamp(0)
+
+  wedding  Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId], name: "idx_entity")
+  @@map("media_files")
+}

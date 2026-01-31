@@ -1,0 +1,20 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wedding_db
+    ports:
+      - '3307:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  api:
+    build: .
+    depends_on: [db]
+    environment:
+      DATABASE_URL: mysql://root:root@db:3306/wedding_db
+
+volumes:
+  mysql_data:

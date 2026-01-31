@@ -1,0 +1,1 @@
+root = true[*]charset = utf-8end_of_line = lfinsert_final_newline = truetrim_trailing_whitespace = true[*.{js,ts,jsx,tsx,json}]indent_style = spaceindent_size = 2[*.md]trim_trailing_whitespace = false
