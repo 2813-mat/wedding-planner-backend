@@ -5,6 +5,7 @@ import {
   IsDecimal,
   IsOptional,
   IsNotEmpty,
+  IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -24,9 +25,12 @@ export class CreateWeddingDto {
   @IsOptional()
   location?: string;
 
-  @ApiProperty({ example: '50000.00', required: false })
-  @IsDecimal({ force_decimal: true }, { message: 'Orçamento deve ser decimal' })
-  @Type(() => Number)
+  @ApiProperty({ example: 50000.0, required: false })
+  @IsNumber(
+    { maxDecimalPlaces: 2, allowNaN: false, allowInfinity: false }, // limita a 2 casas decimais
+    { message: 'Orçamento deve ser um número decimal válido com até 2 casas' },
+  )
+  @Type(() => Number) // garante transformação string → number (se vier como string)
   @IsOptional()
   budgetTotal?: number;
 

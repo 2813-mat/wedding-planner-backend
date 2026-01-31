@@ -19,27 +19,27 @@ export class AuthService {
    * @returns O usuário do Prisma (criado ou atualizado)
    */
   async upsertUserFromAuth0(auth0Payload: any): Promise<User> {
-    const { sub, email, name, picture } = auth0Payload;
+    const { sub, email, name } = auth0Payload;
 
-    if (!sub || !email) {
-      this.logger.warn('Payload Auth0 incompleto', { sub, email });
-      throw new UnauthorizedException('Dados de autenticação inválidos');
+    if (!sub) {
+      throw new UnauthorizedException('ID do provedor ausente no token');
     }
 
-    // sub do Auth0 é algo como "auth0|123abc..." ou "google-oauth2|..."
+    if (!email) {
+      throw new UnauthorizedException('Email ausente no perfil do usuário');
+    }
+
     const provider = sub.includes('|') ? sub.split('|')[0] : 'auth0';
     const providerId = sub;
 
     try {
       const user = await this.prisma.user.upsert({
         where: {
-          providerId, // @unique no schema
+          providerId,
         },
         update: {
           email,
-          fullName: name || email.split('@')[0], // fallback se name não vier
-          // Opcional: atualizar picture se quiser salvar URL da foto do provedor
-          // picture: picture,
+          fullName: name || email.split('@')[0],
           updatedAt: new Date(),
         },
         create: {
@@ -47,8 +47,7 @@ export class AuthService {
           fullName: name || email.split('@')[0],
           provider,
           providerId,
-          role: 'noivo', // default para novos usuários (ajuste se quiser)
-          // passwordHash: null, // já é null por default para SSO
+          role: 'noivo',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -64,19 +63,12 @@ export class AuthService {
     }
   }
 
-  /**
-   * Busca o usuário atual pelo providerId (sub do Auth0).
-   * Útil em guards ou interceptors para injetar user no request.
-   */
   async findUserByProviderId(providerId: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { providerId },
     });
   }
 
-  /**
-   * Exemplo: método para atualizar role ou outros dados (admin actions)
-   */
   async updateUserRole(
     userId: bigint,
     newRole: 'noivo' | 'convidado' | 'admin',
@@ -87,10 +79,6 @@ export class AuthService {
     });
   }
 
-  // Futuro: se quiser fallback local (email/senha)
-  // async validateLocalUser(email: string, password: string): Promise<User | null> { ... }
-
-  // Método auxiliar para extrair userId do payload (útil em controllers)
   getUserIdFromPayload(payload: any): string {
     return payload.sub;
   }

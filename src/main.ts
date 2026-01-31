@@ -14,6 +14,16 @@ async function bootstrap() {
     }),
   );
 
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .set('json replacer', (key: string, value: any) => {
+      if (typeof value === 'bigint') {
+        return value.toString(); // converte BigInt para string
+      }
+      return value;
+    });
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
