@@ -52,7 +52,7 @@ export class WeddingsService {
 
     const userBigIntId = BigInt(user.id);
 
-    return this.prisma.wedding.findMany({
+    return this.prisma.wedding.findFirst({
       where: { createdBy: userBigIntId },
     });
   }

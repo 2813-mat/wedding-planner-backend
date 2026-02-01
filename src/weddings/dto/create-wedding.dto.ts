@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsDateString,
-  IsDecimal,
   IsOptional,
   IsNotEmpty,
   IsNumber,
@@ -27,10 +26,10 @@ export class CreateWeddingDto {
 
   @ApiProperty({ example: 50000.0, required: false })
   @IsNumber(
-    { maxDecimalPlaces: 2, allowNaN: false, allowInfinity: false }, // limita a 2 casas decimais
+    { maxDecimalPlaces: 2, allowNaN: false, allowInfinity: false },
     { message: 'Orçamento deve ser um número decimal válido com até 2 casas' },
   )
-  @Type(() => Number) // garante transformação string → number (se vier como string)
+  @Type(() => Number)
   @IsOptional()
   budgetTotal?: number;
 
