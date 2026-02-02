@@ -23,14 +23,14 @@ export class VendorsController {
     return this.vendorsService.create(createVendorDto, wedding?.id);
   }
 
-  // @Get()
-  // async listAll(@Req() req) {
-  //   const wedding = await this.weddingService.findByUser(req.user.userId);
+  @Get()
+  async listAll(@Req() req) {
+    const wedding = await this.weddingService.findByUser(req.user.userId);
 
-  //   if (!wedding) {
-  //     throw new Error('Wedding not found for this user');
-  //   }
+    if (!wedding) {
+      throw new Error('Wedding not found for this user');
+    }
 
-  //   return this.vendorsService.create(wedding?.id);
-  // }
+    return this.vendorsService.listVendors(wedding?.id);
+  }
 }

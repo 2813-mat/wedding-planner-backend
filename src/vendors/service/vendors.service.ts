@@ -14,4 +14,10 @@ export class VendorsService {
       },
     });
   }
+
+  async listVendors(weddingId: bigint) {
+    return this.prisma.vendor.findMany({
+      where: { weddingId: weddingId },
+    });
+  }
 }

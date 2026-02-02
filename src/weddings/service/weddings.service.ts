@@ -44,6 +44,7 @@ export class WeddingsService {
 
   async findByUser(userId: string) {
     const user = await this.authService.findUserByProviderId(userId);
+
     if (!user) {
       throw new UnauthorizedException(
         'Não encontrado no banco. Execute /auth/sync-user primeiro.',
