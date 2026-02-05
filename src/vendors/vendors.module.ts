@@ -4,8 +4,8 @@ import { VendorsService } from './service/vendors.service';
 import { WeddingsModule } from 'src/weddings/weddings.module';
 
 @Module({
-  imports: [WeddingsModule],
   controllers: [VendorsController],
   providers: [VendorsService],
+  imports: [WeddingsModule],
 })
 export class VendorsModule {}

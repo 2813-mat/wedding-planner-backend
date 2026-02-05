@@ -13,6 +13,8 @@ import { ChecklistModule } from './checklist/checklist.module';
 import { GiftsModule } from './gifts/gifts.module';
 import { HonwymoonModule } from './honeymoon/honwymoon.module';
 import { MediaModule } from './media/media.module';
+import { WeddingContextInterceptor } from './common/interceptors/wedding-context.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [

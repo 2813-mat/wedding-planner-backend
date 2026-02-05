@@ -62,6 +62,13 @@ enum EntityType {
   honeymoon
 }
 
+enum HoneymoonStatus {
+  planejando
+  cotando
+  escolhida
+  descartada
+}
+
 // --- MODELS ---
 
 model User {
@@ -105,7 +112,7 @@ model Wedding {
   checklistItems    ChecklistItem[]
   gifts             Gift[]
   giftContributions GiftContribution[]
-  honeymoon         Honeymoon?
+  honeymoon         Honeymoon[]
   mediaFiles        MediaFile[]
 
   @@map("weddings")
@@ -248,7 +255,7 @@ model Gift {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
-  wedding  Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  wedding     Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade, map: "fk_gifts_wedding_unique")
   reserved Guest?   @relation(fields: [reservedBy], references: [id], onDelete: SetNull)
 
   @@map("gifts")
@@ -271,20 +278,25 @@ model GiftContribution {
 }
 
 model Honeymoon {
-  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  weddingId     BigInt    @unique @map("wedding_id") @db.UnsignedBigInt
-  destination   String?   @db.VarChar(150)
-  departureDate DateTime? @map("departure_date") @db.Date
-  returnDate    DateTime? @map("return_date") @db.Date
-  budget        Decimal   @default(0.00) @db.Decimal(12, 2)
-  notes         String?   @db.Text
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+  id            BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  weddingId     BigInt           @map("wedding_id") @db.UnsignedBigInt
+
+  destination   String?          @db.VarChar(150)
+  departureDate DateTime?        @map("departure_date") @db.Date
+  returnDate    DateTime?        @map("return_date") @db.Date
+  budget        Decimal          @default(0.00) @db.Decimal(12, 2)
+  notes         String?          @db.Text
+  status        HoneymoonStatus  @default(planejando)
+
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
   wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
 
+  @@index([weddingId])
   @@map("honeymoon")
 }
+
 
 model MediaFile {
   id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
