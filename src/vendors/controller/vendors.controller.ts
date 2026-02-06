@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
+  Put,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -11,6 +14,7 @@ import { VendorsService } from '../service/vendors.service';
 import { CreateVendorDto } from '../dto/create-vendors.dto';
 import { CurrentWedding } from 'src/common/decorators/current-wedding.decorator';
 import { WeddingContextInterceptor } from 'src/common/interceptors/wedding-context.interceptor';
+import { UpdateVendorDto } from '../dto/update-vendors.dto';
 
 @Controller('vendors')
 @UseInterceptors(WeddingContextInterceptor)
@@ -30,5 +34,19 @@ export class VendorsController {
   @Get()
   async listAll(@CurrentWedding() weddingId: bigint) {
     return this.vendorsService.listVendors(weddingId);
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateVendorDto: UpdateVendorDto,
+    @CurrentWedding() weddingId: bigint,
+  ) {
+    return this.vendorsService.update(id, updateVendorDto, weddingId);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string, @CurrentWedding() weddingId: bigint) {
+    return this.vendorsService.delete(id, weddingId);
   }
 }

@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
+  Put,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -11,6 +14,7 @@ import { WeddingContextInterceptor } from 'src/common/interceptors/wedding-conte
 import { CreateGuestDto } from '../dto/create-guests.dto';
 import { GuestsService } from '../service/guests.service';
 import { CurrentWedding } from 'src/common/decorators/current-wedding.decorator';
+import { UpdateGuestDto } from '../dto/update-guests.dto';
 
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(WeddingContextInterceptor)
@@ -29,5 +33,19 @@ export class GuestsController {
   @Get()
   async listAll(@CurrentWedding() weddingId: bigint) {
     return this.guestsService.listGuests(weddingId);
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateGuestDto,
+    @CurrentWedding() weddingId: bigint,
+  ) {
+    return this.guestsService.update(id, dto, weddingId);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string, @CurrentWedding() weddingId: bigint) {
+    return this.guestsService.delete(id, weddingId);
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateHoneymoonDto } from '../dto/create-honeymoon.dto';
+import { UpdateHoneymoonDto } from '../dto/update-honeymoon.dto';
 
 @Injectable()
 export class HoneymoonService {
@@ -23,5 +24,18 @@ export class HoneymoonService {
 
   async listHoneymoons(id: bigint) {
     return this.prisma.honeymoon.findFirst({ where: { weddingId: id } });
+  }
+
+  async update(id: string, dto: UpdateHoneymoonDto, weddingId: bigint) {
+    return this.prisma.honeymoon.update({
+      where: { id: BigInt(id) },
+      data: dto,
+    });
+  }
+
+  async delete(id: string, weddingId: bigint) {
+    return this.prisma.honeymoon.delete({
+      where: { id: BigInt(id) },
+    });
   }
 }

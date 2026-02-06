@@ -1,8 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuthService } from 'src/auth/services/auth.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateWeddingDto } from 'src/weddings/dto/create-wedding.dto';
+import { UpdateWeddingDto } from '../dto/update-wedding.dto';
 
 @Injectable()
 export class WeddingsService {
@@ -55,6 +60,39 @@ export class WeddingsService {
 
     return this.prisma.wedding.findFirst({
       where: { createdBy: userBigIntId },
+    });
+  }
+
+  async update(id: string, dto: UpdateWeddingDto, userId: string) {
+    const wedding = await this.prisma.wedding.findUnique({
+      where: { id: BigInt(id) },
+    });
+
+    if (!wedding) {
+      throw new NotFoundException('Wedding not found');
+    }
+
+    if (wedding.createdBy !== BigInt(userId)) {
+      throw new UnauthorizedException('You are not the owner of this wedding');
+    }
+
+    return this.prisma.wedding.update({
+      where: { id: BigInt(id) },
+      data: dto,
+    });
+  }
+
+  async delete(id: string, userId: string) {
+    const wedding = await this.prisma.wedding.findUnique({
+      where: { id: BigInt(id) },
+    });
+
+    if (!wedding) {
+      throw new NotFoundException('Wedding not found');
+    }
+
+    return this.prisma.wedding.delete({
+      where: { id: BigInt(id) },
     });
   }
 }
