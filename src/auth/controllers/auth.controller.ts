@@ -31,15 +31,16 @@ export class AuthController {
 
     const userInfo = userInfoResponse.data;
 
-    console.log('UserInfo do Auth0:', userInfo);
-
     if (!userInfo.sub || !userInfo.email) {
       throw new UnauthorizedException('Dados essenciais ausentes no userinfo');
     }
 
     const user = await this.authService.upsertUserFromAuth0(userInfo);
     return {
-      message: 'Usuário sincronizado com sucesso',
+      message:
+        user.createdAt.getTime() === user.updatedAt.getTime()
+          ? 'Usuário criado com sucesso'
+          : 'Usuário já sincronizado',
       user: {
         id: user.id.toString(),
         email: user.email,
