@@ -23,7 +23,7 @@ export class HoneymoonService {
   }
 
   async listHoneymoons(id: bigint) {
-    return this.prisma.honeymoon.findFirst({ where: { weddingId: id } });
+    return this.prisma.honeymoon.findMany({ where: { weddingId: id } });
   }
 
   async update(id: string, dto: UpdateHoneymoonDto, weddingId: bigint) {
