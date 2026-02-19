@@ -20,7 +20,7 @@ export class WeddingContextInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const wedding = await this.weddingsService.findByUser(userId);
+    const wedding = await this.weddingsService.findFirstWeddingByUser(userId);
 
     if (!wedding) {
       throw new NotFoundException('Wedding not found for this user');

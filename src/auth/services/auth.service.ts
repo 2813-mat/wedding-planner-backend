@@ -7,17 +7,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Sincroniza ou cria o usuário no banco baseado nos dados do token Auth0.
-   * Chame isso na primeira vez que o usuário loga (ex: após login no frontend).
-   * @param auth0Payload - O payload validado do JWT (de req.user na strategy)
-   * @returns O usuário do Prisma (criado ou atualizado)
-   */
   async upsertUserFromAuth0(auth0Payload: any): Promise<User> {
     const { sub, email, name } = auth0Payload;
 
@@ -50,6 +41,22 @@ export class AuthService {
           role: 'noivo',
           createdAt: new Date(),
           updatedAt: new Date(),
+        },
+      });
+
+      await this.prisma.weddingUser.upsert({
+        where: {
+          weddingId_userId: {
+            weddingId: BigInt(1),
+            userId: user.id,
+          },
+        },
+        update: {},
+        create: {
+          weddingId: BigInt(1),
+          userId: user.id,
+          isOwner: true,
+          canEdit: true,
         },
       });
 

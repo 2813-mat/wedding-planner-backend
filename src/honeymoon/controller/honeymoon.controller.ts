@@ -27,7 +27,6 @@ export class HoneymoonController {
     @Body() body: CreateHoneymoonDto,
     @CurrentWedding() weddingId: bigint,
   ) {
-    console.log('wedding id', weddingId);
     return this.honeymoonService.create(body, weddingId);
   }
 
