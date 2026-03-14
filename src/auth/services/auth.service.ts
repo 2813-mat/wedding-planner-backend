@@ -24,25 +24,36 @@ export class AuthService {
     const providerId = sub;
 
     try {
-      const user = await this.prisma.user.upsert({
-        where: {
-          providerId,
-        },
-        update: {
-          email,
-          fullName: name || email.split('@')[0],
-          updatedAt: new Date(),
-        },
-        create: {
-          email,
-          fullName: name || email.split('@')[0],
-          provider,
-          providerId,
-          role: 'noivo',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
+      let user = await this.prisma.user.findUnique({ where: { providerId } });
+
+      if (!user) {
+        user = await this.prisma.user.findUnique({ where: { email } });
+      }
+
+      if (user) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            email,
+            fullName: name || email.split('@')[0],
+            provider,
+            providerId,
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        user = await this.prisma.user.create({
+          data: {
+            email,
+            fullName: name || email.split('@')[0],
+            provider,
+            providerId,
+            role: 'noivo',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      }
 
       await this.prisma.weddingUser.upsert({
         where: {

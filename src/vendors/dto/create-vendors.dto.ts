@@ -1,16 +1,3 @@
-/*
-id: number;
-  name: string;
-  category: string;
-  contact: string;
-  email: string;
-  phone: string;
-  status: VendorStatus;
-  rating: number;
-  notes: string;
-  price?: string;
-*/
-
 import { ApiProperty } from '@nestjs/swagger';
 import { VendorCategory, VendorStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
