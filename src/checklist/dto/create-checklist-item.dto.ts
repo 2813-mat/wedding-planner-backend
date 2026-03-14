@@ -1,29 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Priority } from '@prisma/client';
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateChecklistItemDto {
   @ApiProperty()
   @IsString()
   title: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty()
   @IsString()
-  description?: string;
+  category: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty()
   @IsString()
-  category?: string;
+  period: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsDateString()
-  dueDate?: string;
-
-  @ApiProperty({ enum: Priority, required: false })
-  @IsOptional()
-  @IsEnum(Priority)
-  priority?: Priority;
+  @IsBoolean()
+  completed?: boolean;
 }

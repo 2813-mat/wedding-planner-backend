@@ -182,6 +182,7 @@ model BudgetCategory {
   name      String   @db.VarChar(100)
   allocated Decimal  @default(0.00) @db.Decimal(12, 2)
   spent     Decimal  @default(0.00) @db.Decimal(12, 2)
+  color     String   @default("#8B7355") @db.VarChar(20)
   sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
@@ -230,6 +231,7 @@ model ChecklistItem {
   title       String    @db.VarChar(200)
   description String?   @db.Text
   category    String?   @db.VarChar(100)
+  period      String    @default("") @db.VarChar(100)
   dueDate     DateTime? @map("due_date") @db.Date
   completedAt DateTime? @map("completed_at") @db.Timestamp(0)
   priority    Priority  @default(media)
