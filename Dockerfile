@@ -21,8 +21,8 @@ RUN npx prisma generate
 # 7. Build do NestJS
 RUN npm run build
 
-# 8. Expor a porta que o NestJS usa (padrão 3000)
-EXPOSE 3000
+# 8. Expor a porta que o NestJS usa
+EXPOSE 3013
 
 # 9. Comando para rodar a aplicação
 CMD ["npm", "run", "start:prod"]

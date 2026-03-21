@@ -1,0 +1,18 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and restart containers
+        run: |
+          docker compose build --no-cache api
+          docker compose up -d
+          docker compose exec -T api npx prisma migrate deploy
