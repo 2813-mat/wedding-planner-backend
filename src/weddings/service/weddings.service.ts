@@ -1,32 +1,21 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { AuthService } from 'src/auth/services/auth.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateWeddingDto } from 'src/weddings/dto/create-wedding.dto';
 import { UpdateWeddingDto } from '../dto/update-wedding.dto';
 
 @Injectable()
 export class WeddingsService {
-  constructor(
-    private prisma: PrismaService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateWeddingDto, userId: string) {
+    const userBigIntId = BigInt(userId);
     const weddingDate = new Date(dto.weddingDate);
-
-    const user = await this.authService.findUserByProviderId(userId);
-    if (!user) {
-      throw new UnauthorizedException(
-        'Não encontrado no banco. Execute /auth/sync-user primeiro.',
-      );
-    }
-
-    const userBigIntId = BigInt(user.id);
 
     return this.prisma.$transaction(async (tx) => {
       const wedding = await tx.wedding.create({
@@ -40,9 +29,7 @@ export class WeddingsService {
           coupleName1: dto.coupleName1,
           coupleName2: dto.coupleName2,
           creator: {
-            connect: {
-              id: userBigIntId,
-            },
+            connect: { id: userBigIntId },
           },
         },
       });
@@ -61,15 +48,7 @@ export class WeddingsService {
   }
 
   async findByUser(userId: string) {
-    const user = await this.authService.findUserByProviderId(userId);
-
-    if (!user) {
-      throw new UnauthorizedException(
-        'Não encontrado no banco. Execute /auth/sync-user primeiro.',
-      );
-    }
-
-    const userBigIntId = BigInt(user.id);
+    const userBigIntId = BigInt(userId);
 
     return this.prisma.wedding.findMany({
       where: {
@@ -81,19 +60,17 @@ export class WeddingsService {
     });
   }
 
-  /** Retorna o primeiro casamento que o usuário tem acesso (para interceptor/contexto) */
+  findWeddings() {
+    return this.prisma.wedding.findMany({});
+  }
+
   async findFirstWeddingByUser(userId: string) {
     const weddings = await this.findByUser(userId);
     return weddings[0] ?? null;
   }
 
   async update(id: string, dto: UpdateWeddingDto, userId: string) {
-    const user = await this.authService.findUserByProviderId(userId);
-    if (!user) {
-      throw new UnauthorizedException(
-        'Não encontrado no banco. Execute /auth/sync-user primeiro.',
-      );
-    }
+    const userBigIntId = BigInt(userId);
 
     const wedding = await this.prisma.wedding.findUnique({
       where: { id: BigInt(id) },
@@ -105,9 +82,9 @@ export class WeddingsService {
     }
 
     const hasAccess = wedding.users.some(
-      (wu) =>
-        wu.userId === BigInt(user.id) && (wu.canEdit || wu.isOwner),
+      (wu) => wu.userId === userBigIntId && (wu.canEdit || wu.isOwner),
     );
+
     if (!hasAccess) {
       throw new UnauthorizedException(
         'Você não tem permissão para editar este casamento',
@@ -120,13 +97,42 @@ export class WeddingsService {
     });
   }
 
-  async delete(id: string, userId: string) {
-    const user = await this.authService.findUserByProviderId(userId);
-    if (!user) {
-      throw new UnauthorizedException(
-        'Não encontrado no banco. Execute /auth/sync-user primeiro.',
-      );
+  async joinWedding(weddingId: string, userId: string) {
+    const weddingBigIntId = BigInt(weddingId);
+    const userBigIntId = BigInt(userId);
+
+    const wedding = await this.prisma.wedding.findUnique({
+      where: { id: weddingBigIntId },
+    });
+
+    if (!wedding) {
+      throw new NotFoundException('Casamento não encontrado');
     }
+
+    const existing = await this.prisma.weddingUser.findUnique({
+      where: {
+        weddingId_userId: { weddingId: weddingBigIntId, userId: userBigIntId },
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException('Usuário já vinculado a este casamento');
+    }
+
+    await this.prisma.weddingUser.create({
+      data: {
+        weddingId: weddingBigIntId,
+        userId: userBigIntId,
+        isOwner: false,
+        canEdit: true,
+      },
+    });
+
+    return { message: 'Usuário vinculado ao casamento com sucesso' };
+  }
+
+  async delete(id: string, userId: string) {
+    const userBigIntId = BigInt(userId);
 
     const wedding = await this.prisma.wedding.findUnique({
       where: { id: BigInt(id) },
@@ -138,8 +144,9 @@ export class WeddingsService {
     }
 
     const isOwner = wedding.users.some(
-      (wu) => wu.userId === BigInt(user.id) && wu.isOwner,
+      (wu) => wu.userId === userBigIntId && wu.isOwner,
     );
+
     if (!isOwner) {
       throw new UnauthorizedException(
         'Apenas o dono do casamento pode excluí-lo',

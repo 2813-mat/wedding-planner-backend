@@ -8,6 +8,7 @@ import {
   Put,
   Param,
   Delete,
+  HttpCode,
 } from '@nestjs/common';
 import { WeddingsService } from '../service/weddings.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -27,6 +28,17 @@ export class WeddingsController {
   @Get('my')
   findMyWeddings(@Req() req) {
     return this.weddingsService.findByUser(req.user.userId);
+  }
+
+  @Get('')
+  findWeddings() {
+    return this.weddingsService.findWeddings();
+  }
+
+  @Post(':id/join')
+  @HttpCode(200)
+  async join(@Param('id') id: string, @Req() req) {
+    return this.weddingsService.joinWedding(id, req.user.userId);
   }
 
   @Put(':id')

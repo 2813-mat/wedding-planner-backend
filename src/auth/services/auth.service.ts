@@ -1,103 +1,93 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { User } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RegisterDto } from '../dto/register.dto';
+import { LoginDto } from '../dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  async upsertUserFromAuth0(auth0Payload: any): Promise<User> {
-    const { sub, email, name } = auth0Payload;
-
-    if (!sub) {
-      throw new UnauthorizedException('ID do provedor ausente no token');
-    }
-
-    if (!email) {
-      throw new UnauthorizedException('Email ausente no perfil do usuário');
-    }
-
-    const provider = sub.includes('|') ? sub.split('|')[0] : 'auth0';
-    const providerId = sub;
-
-    try {
-      let user = await this.prisma.user.findUnique({ where: { providerId } });
-
-      if (!user) {
-        user = await this.prisma.user.findUnique({ where: { email } });
-      }
-
-      if (user) {
-        user = await this.prisma.user.update({
-          where: { id: user.id },
-          data: {
-            email,
-            fullName: name || email.split('@')[0],
-            provider,
-            providerId,
-            updatedAt: new Date(),
-          },
-        });
-      } else {
-        user = await this.prisma.user.create({
-          data: {
-            email,
-            fullName: name || email.split('@')[0],
-            provider,
-            providerId,
-            role: 'noivo',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        });
-      }
-
-      await this.prisma.weddingUser.upsert({
-        where: {
-          weddingId_userId: {
-            weddingId: BigInt(1),
-            userId: user.id,
-          },
-        },
-        update: {},
-        create: {
-          weddingId: BigInt(1),
-          userId: user.id,
-          isOwner: true,
-          canEdit: true,
-        },
-      });
-
-      this.logger.log(
-        `Usuário sincronizado/criado: ${user.id} (${user.email})`,
-      );
-      return user;
-    } catch (error) {
-      this.logger.error('Erro ao upsert usuário', error);
-      throw new Error('Falha ao sincronizar usuário com o banco');
-    }
-  }
-
-  async findUserByProviderId(providerId: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { providerId },
+  async register(dto: RegisterDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
     });
-  }
 
-  async updateUserRole(
-    userId: bigint,
-    newRole: 'noivo' | 'convidado' | 'admin',
-  ): Promise<User> {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { role: newRole },
+    if (existing) {
+      throw new ConflictException('E-mail já cadastrado');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    const user = await this.prisma.user.create({
+      data: {
+        fullName: dto.fullName,
+        email: dto.email,
+        passwordHash,
+        provider: 'local',
+        role: 'noivo',
+      },
     });
+
+    const token = this.generateToken(user);
+
+    return {
+      message: 'Usuário criado com sucesso',
+      token,
+      user: {
+        id: user.id.toString(),
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+    };
   }
 
-  getUserIdFromPayload(payload: any): string {
-    return payload.sub;
+  async login(dto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('E-mail ou senha inválidos');
+    }
+
+    const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
+
+    if (!passwordMatch) {
+      throw new UnauthorizedException('E-mail ou senha inválidos');
+    }
+
+    const token = this.generateToken(user);
+
+    return {
+      token,
+      user: {
+        id: user.id.toString(),
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+    };
+  }
+
+  async findUserById(id: bigint) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  private generateToken(user: { id: bigint; email: string; fullName: string | null }) {
+    return this.jwtService.sign({
+      sub: user.id.toString(),
+      email: user.email,
+      name: user.fullName,
+    });
   }
 }
