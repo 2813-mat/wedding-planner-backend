@@ -16,12 +16,16 @@ import { CurrentWedding } from 'src/common/decorators/current-wedding.decorator'
 import { BudgetService } from '../service/budget.service';
 import { CreateBudgetCategoryDto } from '../dto/create-budget-category.dto';
 import { UpdateBudgetCategoryDto } from '../dto/update-budget-category.dto';
+import { CreateBudgetPaymentDto } from '../dto/create-budget-payment.dto';
+import { UpdateBudgetPaymentDto } from '../dto/update-budget-payment.dto';
 
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(WeddingContextInterceptor)
 @Controller('budget')
 export class BudgetController {
   constructor(private readonly budgetService: BudgetService) {}
+
+  // --- Categories ---
 
   @Get('categories')
   async listCategories(@CurrentWedding() weddingId: bigint) {
@@ -52,5 +56,38 @@ export class BudgetController {
     @CurrentWedding() weddingId: bigint,
   ) {
     return this.budgetService.deleteCategory(id, weddingId);
+  }
+
+  // --- Payments ---
+
+  @Get('payments')
+  async listPayments(@CurrentWedding() weddingId: bigint) {
+    return this.budgetService.listPayments(weddingId);
+  }
+
+  @Post('payments')
+  async createPayment(
+    @Body() dto: CreateBudgetPaymentDto,
+    @CurrentWedding() weddingId: bigint,
+  ) {
+    return this.budgetService.createPayment(dto, weddingId);
+  }
+
+  @Put('payments/:id')
+  async updatePayment(
+    @Param('id') id: string,
+    @Body() dto: UpdateBudgetPaymentDto,
+    @CurrentWedding() weddingId: bigint,
+  ) {
+    return this.budgetService.updatePayment(id, dto, weddingId);
+  }
+
+  @Delete('payments/:id')
+  @HttpCode(204)
+  async deletePayment(
+    @Param('id') id: string,
+    @CurrentWedding() weddingId: bigint,
+  ) {
+    return this.budgetService.deletePayment(id, weddingId);
   }
 }
