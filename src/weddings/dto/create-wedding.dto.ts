@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsNotEmpty,
   IsNumber,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -42,4 +43,9 @@ export class CreateWeddingDto {
   @IsString()
   @IsOptional()
   coupleName2?: string;
+
+  @ApiProperty({ example: 150, required: false })
+  @IsInt()
+  @IsOptional()
+  guestLimit?: number;
 }

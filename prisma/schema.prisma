@@ -99,6 +99,7 @@ model Wedding {
   budgetTotal  Decimal  @default(0.00) @map("budget_total") @db.Decimal(12, 2)
   coupleName1  String?  @map("couple_name_1") @db.VarChar(100)
   coupleName2  String?  @map("couple_name_2") @db.VarChar(100)
+  guestLimit   Int?     @map("guest_limit")
   createdBy    BigInt   @map("created_by") @db.UnsignedBigInt
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)

@@ -28,6 +28,7 @@ export class WeddingsService {
             : undefined,
           coupleName1: dto.coupleName1,
           coupleName2: dto.coupleName2,
+          guestLimit: dto.guestLimit,
           creator: {
             connect: { id: userBigIntId },
           },
